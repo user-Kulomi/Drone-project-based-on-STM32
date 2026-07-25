@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -26,10 +27,10 @@
 #include "Com_debug.h"
 #include "App_FreeRTOS_Task.h"
 /* USER CODE END Includes */
+
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-extern void App_FreeRTOS_start(void);//启动FreeRTOS
-
+extern void App_FreeRTOS_start(void);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -88,9 +89,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_TIM1_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  //实现最初的日志输出打印
+  //实现�?初的日志输出打印
   // HAL_UART_Transmit(&huart2, "Hello World!\n", 13, 1000);
   
   //输出带有原码名称和行号的日志信息

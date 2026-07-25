@@ -159,10 +159,10 @@ void DebugMon_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-  //手动调用FreeRTOS系统滴答定时器
+  //手动调用FreeRTOS系统滴答定时�?
   if(xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)//调度器状态不等于未启动，即FreeRTOS已经启动
   {
-    xPortSysTickHandler(); //调用FreeRTOS系统滴答定时器
+    xPortSysTickHandler(); //调用FreeRTOS系统滴答定时�?
   }
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
