@@ -61,6 +61,7 @@ Drone-project-based-on-STM32
 |                                       |
 |                                       |---> P02_remote_hal.ioc (CubeMX graphical configuration project source)
 |
+|---> PCB_files(PCB hardware guide files)
 |---> .gitignore (Git ignore rules)
 |---> README.md (Project documentation - Chinese)
 |---> README_EN.md (Project documentation - English)
