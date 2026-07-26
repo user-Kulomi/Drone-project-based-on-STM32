@@ -1,133 +1,136 @@
+# Drone-project-based-on-STM32
+
 ## 1. 项目介绍
 
 ### 1.1 综述
 
 此项目的原型是尚硅谷无人机项目教程。本人根据该原型迭代与调试，并在此基础上进行了一些**逻辑与功能上的优化**，也增加了一些**新的功能**，使之更加易懂易用。同时为了提升本项目代码部分的可读性，本人在项目的代码中加入了**大量注释与说明**，以便于其他开发者阅读与理解。
 
-***本项目截止目前仍然在开发中，后续会根据实际需求进行迭代与优化。***
+> **本项目截止目前仍然在开发中，后续会根据实际需求进行迭代与优化。**
 
-[原型连接](https://www.bilibili.com/video/BV1f8rbBSEq3?spm_id_from=333.788.videopod.episodes&vd_source=62df64ed7202909f5eecb7105fd5eb73*)
+[原型链接（B站视频）](https://www.bilibili.com/video/BV1f8rbBSEq3?spm_id_from=333.788.videopod.episodes&vd_source=62df64ed7202909f5eecb7105fd5eb73)
+
+---
 
 ### 1.2 项目结构
 
+```
 Drone-project-based-on-STM32
-|
-|---> P01_flight_hal     (无人机部分) ---> Core(CubeMX 自动生成的应用层初始化代码)
-|                                       |       |---> Inc(头文件目录)
-|                                       |       |---> Src(源文件目录)
-|                                       |
-|                                       |---> Drivers(官方底层库)
-|                                       |       |---> CMSIS(ARM CMSIS 标准内核库)
-|                                       |       |---> STM32F1xx_HAL_Driver(STM32F1 HAL 硬件抽象层驱动)
-|                                       |
-|                                       |---> MDK-ARM(Keil5 专用工程目录)
-|                                       |       |---> .vscode(VS Code 编辑器配置目录)
-|                                       |       |---> application(应用层业务代码，FreeRTOS 任务逻辑)
-|                                       |       |---> common(公共通用模块，调试打印、全局配置)
-|                                       |       |---> DebugConfig(Keil 调试器配置文件)
-|                                       |       |---> FreeRTOS(FreeRTOS 实时操作系统源码)
-|                                       |       |---> interface(硬件接口驱动层)
-|                                       |       |       |---> int_led(LED 指示灯驱动)
-|                                       |       |       |---> int_motor(电机 PWM 驱动)
-|                                       |       |       |---> int_SI24R1(SI24R1 2.4G 无线芯片驱动)
-|                                       |       |       |---> int_IP5305T(IP5305T 电源管理芯片驱动)
-|                                       |       |---> P01_flight_hal(工程输出目录，含 .sct 分散加载脚本)
-|                                       |       |---> P01_flight_hal.uvprojx(Keil5 工程主文件)
-|                                       |       |---> startup_stm32f103xb.s(STM32F103 启动汇编文件)
-|                                       |
-|                                       |---> P01_flight_hal.ioc(CubeMX 图形化配置工程源文件)
-|
-|---> P02_remote_hal      (遥控器部分) ---> Core(CubeMX 自动生成的应用层初始化代码)
-|                                       |       |---> Inc(头文件目录)
-|                                       |       |---> Src(源文件目录)
-|                                       |
-|                                       |---> Drivers(官方底层库)
-|                                       |       |---> CMSIS(ARM CMSIS 标准内核库)
-|                                       |       |---> STM32F1xx_HAL_Driver(STM32F1 HAL 硬件抽象层驱动)
-|                                       |
-|                                       |---> MDK-ARM(Keil5 专用工程目录)
-|                                       |       |---> .vscode(VS Code 编辑器配置目录)
-|                                       |       |---> application(应用层业务代码，FreeRTOS 任务逻辑)
-|                                       |       |---> common(公共通用模块，调试打印)
-|                                       |       |---> DebugConfig(Keil 调试器配置文件)
-|                                       |       |---> FreeRTOS(FreeRTOS 实时操作系统源码)
-|                                       |       |---> interface(硬件接口驱动层)
-|                                       |       |       |---> int_SI24R1(SI24R1 2.4G 无线芯片驱动)
-|                                       |       |       |---> int_IP5305T(IP5305T 电源管理芯片驱动)
-|                                       |       |---> P01_flight_hal(工程输出目录，含 .sct 分散加载脚本)
-|                                       |       |---> P02_remote_hal.uvprojx(Keil5 工程主文件)
-|                                       |       |---> startup_stm32f103xb.s(STM32F103 启动汇编文件)
-|                                       |
-|                                       |---> P02_remote_hal.ioc(CubeMX 图形化配置工程源文件)
-|
-|---> PCB_files(PCB硬件指导文件夹)
-|---> .gitignore(Git 版本控制忽略规则)
-|---> README.md(项目说明文档 - 中文版)
-|---> README_EN.md(项目说明文档 - 英文版)
+│
+├── P01_flight_hal                     # 无人机部分
+│   ├── Core                           # CubeMX 自动生成的应用层初始化代码
+│   │   ├── Inc                        # 头文件目录
+│   │   └── Src                        # 源文件目录
+│   ├── Drivers                        # 官方底层库
+│   │   ├── CMSIS                      # ARM CMSIS 标准内核库
+│   │   └── STM32F1xx_HAL_Driver       # STM32F1 HAL 硬件抽象层驱动
+│   ├── MDK-ARM                        # Keil5 专用工程目录
+│   │   ├── .vscode                    # VS Code 编辑器配置目录
+│   │   ├── application                # 应用层业务代码，FreeRTOS 任务逻辑
+│   │   ├── common                     # 公共通用模块，调试打印、全局配置
+│   │   ├── DebugConfig                # Keil 调试器配置文件
+│   │   ├── FreeRTOS                   # FreeRTOS 实时操作系统源码
+│   │   ├── interface                  # 硬件接口驱动层
+│   │   │   ├── int_led                # LED 指示灯驱动
+│   │   │   ├── int_motor              # 电机 PWM 驱动
+│   │   │   ├── int_SI24R1             # SI24R1 2.4G 无线芯片驱动
+│   │   │   └── int_IP5305T            # IP5305T 电源管理芯片驱动
+│   │   ├── P01_flight_hal             # 工程输出目录，含 .sct 分散加载脚本
+│   │   ├── P01_flight_hal.uvprojx     # Keil5 工程主文件
+│   │   └── startup_stm32f103xb.s      # STM32F103 启动汇编文件
+│   └── P01_flight_hal.ioc             # CubeMX 图形化配置工程源文件
+│
+├── P02_remote_hal                     # 遥控器部分
+│   ├── Core                           # CubeMX 自动生成的应用层初始化代码
+│   │   ├── Inc                        # 头文件目录
+│   │   └── Src                        # 源文件目录
+│   ├── Drivers                        # 官方底层库
+│   │   ├── CMSIS                      # ARM CMSIS 标准内核库
+│   │   └── STM32F1xx_HAL_Driver       # STM32F1 HAL 硬件抽象层驱动
+│   ├── MDK-ARM                        # Keil5 专用工程目录
+│   │   ├── .vscode                    # VS Code 编辑器配置目录
+│   │   ├── application                # 应用层业务代码，FreeRTOS 任务逻辑
+│   │   ├── common                     # 公共通用模块，调试打印
+│   │   ├── DebugConfig                # Keil 调试器配置文件
+│   │   ├── FreeRTOS                   # FreeRTOS 实时操作系统源码
+│   │   ├── interface                  # 硬件接口驱动层
+│   │   │   ├── int_SI24R1             # SI24R1 2.4G 无线芯片驱动
+│   │   │   └── int_IP5305T            # IP5305T 电源管理芯片驱动
+│   │   ├── P01_flight_hal             # 工程输出目录，含 .sct 分散加载脚本
+│   │   ├── P02_remote_hal.uvprojx     # Keil5 工程主文件
+│   │   └── startup_stm32f103xb.s      # STM32F103 启动汇编文件
+│   └── P02_remote_hal.ioc             # CubeMX 图形化配置工程源文件
+│
+├── PCB_files                          # PCB 硬件指导文件夹
+├── .gitignore                         # Git 版本控制忽略规则
+├── README.md                          # 项目说明文档 - 中文版
+└── README_EN.md                       # 项目说明文档 - 英文版
+```
+
+---
 
 ## 2. 项目运行
 
 ### 2.1 环境准备
 
-**Keil MDK5（必须）**
-
-STM32CubeMX（可选，用于自主调试时生成代码）
-
-VS Code（可选，用于优化代码编写体验）
-
-
-### 2.2 运行步骤
-
-# 快速上手指南
-
-本指南适用于**仅使用 Keil MDK‑ARM** 开发环境的用户，无需安装 STM32CubeMX 或其他 IDE。
+- **Keil MDK5**（必须）
+- **STM32CubeMX**（可选，用于自主调试时生成代码）
+- **VS Code**（可选，用于优化代码编写体验）
 
 ---
 
-## 1. 环境准备
+### 2.2 运行步骤
 
-### 1.1 安装 Keil MDK‑ARM（若未安装）
+#### 2.2.1 环境准备（详细）
+
+##### 安装 Keil MDK‑ARM（若未安装）
 
 - 安装 [Keil MDK‑ARM](https://www.keil.com/download/product/)（版本 5.0 及以上）。
 - 安装过程中请确保勾选 **STM32F1 系列支持包**，或后续通过 Pack Installer 手动安装：
   - 打开 Keil，点击 `Pack Installer` 按钮。
-  - 在 `Devices` 搜索 `STM32F103`(本项目适配芯片具体型号为STM32F103C8T6)，点击 `Install` 安装 `Keil.STM32F1xx_DFP` 包。
+  - 在 `Devices` 搜索 `STM32F103`（本项目适配芯片具体型号为 STM32F103C8T6），点击 `Install` 安装 `Keil.STM32F1xx_DFP` 包。
 
-### 1.2 准备硬件
+##### 准备硬件
 
-- **官方购买链接** ：[飞机本体 + 遥控器](https://e.tb.cn/h.8dxjhQnxAMEf27j?tk=UyxHgFQpvYE)
+- **官方购买链接**：[飞机本体 + 遥控器](https://e.tb.cn/h.8dxjhQnxAMEf27j?tk=UyxHgFQpvYE)
+- **个人打板、焊接**：打开 `PCB_files` 文件夹，按 Gerber 文件下单打板（推荐使用嘉立创下单助手），按物料清单购买元件，自行完成焊接。
 
-- **个人打板，焊接** ： 打开PCB文件夹，按gerber文件下单打板(推荐使用嘉立创下单助手)，按物料清单购买元件，自行完成焊接。
+---
 
-## 2. 编译工程
+#### 2.2.2 编译工程
 
 本项目包含两个独立工程，需分别编译：
 
 - `P01_flight_hal` —— **无人机飞控**
 - `P02_remote_hal` —— **遥控器**
 
-### 2.1 打开工程
+##### 打开工程
+
 1. 进入对应工程目录：
    - 无人机：`Drone-project-based-on-STM32-main/P01_flight_hal/MDK-ARM/`
    - 遥控器：`Drone-project-based-on-STM32-main/P02_remote_hal/MDK-ARM/`
 2. 双击 `P01_flight_hal.uvprojx` 或 `P02_remote_hal.uvprojx`，Keil 将自动打开工程。
 
-### 2.2 选择编译目标
+##### 选择编译目标
+
 - 在 Keil 工具栏的 `Target` 下拉菜单中，确认选择 **`P01_flight_hal`**（无人机）或 **`P02_remote_hal`**（遥控器）对应的目标名称（通常已默认选中）。
 
-### 2.3 编译
+##### 编译
+
 - 点击工具栏的 **`Build`** 按钮（或按 `F7`）开始编译。
-- 若编译成功，底部 `Build Output` 窗口会显示 **`"0 Error(s), 0 Warning(s)"**，并生成 `.axf` 和 `.hex` 文件（位于 `MDK-ARM/P01_flight_hal/` 或 `P02_remote_hal/` 输出目录）。
+- 若编译成功，底部 `Build Output` 窗口会显示 **`"0 Error(s), 0 Warning(s)"`**，并生成 `.axf` 和 `.hex` 文件（位于 `MDK-ARM/P01_flight_hal/` 或 `P02_remote_hal/` 输出目录）。
 
 ---
 
-## 3. 烧录固件
+#### 2.2.3 烧录固件
 
-### 3.1 连接烧录器
+##### 连接烧录器
+
 - 将 ST‑Link / J‑Link 连接到电脑 USB 口，另一端连接到无人机 / 遥控器主板的 **SWD** 接口（通常为 SWCLK、SWDIO、3.3V、GND）。
-- 给无人机 / 遥控器主板**上电**（通过电池供电，无人机电池型号为603048 +3.7V 2000mAh，遥控器为902731 3.7V 500mAh）
+- 给无人机 / 遥控器主板**上电**（通过电池供电，无人机电池型号为 603048 3.7V 2000mAh，遥控器为 902731 3.7V 500mAh）。
 
-### 3.2 配置烧录器
+##### 配置烧录器
+
 1. 在 Keil 中点击 **`Options for Target`**（魔术棒图标）或按 `Alt+F7`。
 2. 切换到 **`Debug`** 选项卡：
    - 在右侧 `Use` 下拉列表中选择你的烧录器（如 `ST-Link Debugger`）。
@@ -136,30 +139,34 @@ VS Code（可选，用于优化代码编写体验）
    - 确保勾选 `Use Debug Driver`，并选择与 Debug 相同的烧录器。
    - 点击 `Settings`，在 `Programming Algorithm` 中添加 `STM32F10x Med-density Flash`（若已存在则无需操作）。
 
-### 3.3 执行烧录
+##### 执行烧录
+
 - 点击工具栏的 **`Load`** 按钮（或按 `F8`）开始下载。
 - 烧录成功后，`Build Output` 会显示 **`"Application running..."`** 或烧录完成信息。
 
 ---
 
-## 4. 运行与调试
+#### 2.2.4 运行与调试
 
-### 4.1 首次运行
+##### 首次运行
+
 - 烧录完成后，开发板会自动复位并运行固件。
 - 若没有自动运行，可手动按一下板上的 **复位按键**（若有），或重新上电。
 
-### 4.2 串口调试（可选）
+##### 串口调试（可选）
+
 - 项目中使用了 `common` 模块的调试打印功能（通过串口）。
 - 将 USB 转串口模块连接到主板的 **USART1**（TX/RX），波特率默认 **115200**。
 - 打开串口调试助手（如 PuTTY、SecureCRT），即可查看飞控 / 遥控器的运行日志。
 
-### 4.3 调试模式
+##### 调试模式
+
 - 点击 **`Start/Stop Debug Session`**（放大镜图标）进入调试模式。
 - 可设置断点、单步执行、查看变量和寄存器，便于定位问题。
 
 ---
 
-## 5. 注意事项
+#### 2.2.5 注意事项
 
 - **两个工程独立**：无人机和遥控器必须分别编译和烧录，两者通过 2.4G 无线模块（SI24R1）通信。
 - **电源管理**：若使用 IP5305T 电源管理芯片，请确保电池电压正常，否则飞控可能无法启动。
@@ -171,7 +178,7 @@ VS Code（可选，用于优化代码编写体验）
 
 ---
 
-## 6. 常见问题
+#### 2.2.6 常见问题
 
 **Q：烧录时提示 “No Cortex-M SW Device Found”**  
 A：检查 SWD 接线是否正确，目标板是否上电，烧录器驱动是否安装成功。
@@ -182,7 +189,8 @@ A：确认电源正常，且 BOOT0 引脚接地（从 Flash 启动）。若使�
 **Q：串口无打印信息**  
 A：检查串口线连接是否正确（TX → RX，RX → TX，GND 相连），波特率是否与代码中一致（默认 115200）。
 
+---
 
 ### 2.3 运行结果
 
-***未完待续***
+> **未完待续**
