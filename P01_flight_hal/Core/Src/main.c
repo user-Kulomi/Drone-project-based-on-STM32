@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -26,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "Com_debug.h"
 #include "App_FreeRTOS_Task.h"
+#include "int_SI24R1.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,13 +95,15 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  //实现�?初的日志输出打印
+  //实现�?初的日志输出打印
   // HAL_UART_Transmit(&huart2, "Hello World!\n", 13, 1000);
   
   //输出带有原码名称和行号的日志信息
   // debug_printf("Hello %s\n", "World");
+  Int_SI24R1_Init();//初始化SI24R1
   App_FreeRTOS_start();//启动Freertos
 
   /* USER CODE END 2 */

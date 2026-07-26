@@ -19,6 +19,8 @@ Remote_State remote_state = REMOTE_CONNECT;
 //表示当前飞行状态：
 Flight_State flight_state = IDLE;
 
+//定义各个任务：
+
 //电源管理任务
 void power_task(void *pvParameters);
 #define POWER_TASK_STACK_SIZE  128       //堆栈大小
@@ -39,7 +41,17 @@ void led_task(void *pvParameters);
 #define LED_TASK_PRIORITY    1
 TaskHandle_t led_task_handle;
 #define LED_TASK_PERIOD      100     //定义led灯任务周期
-void App_FreeRTOS_start(void)//启动FreeRTOS
+
+//通信任务
+void com_task(void *pvParameters);
+#define COM_TASK_STACK_SIZE  128
+#define COM_TASK_PRIORITY    3
+TaskHandle_t com_task_handle;
+#define COM_TASK_PERIOD 6 //任务周期
+
+//启动FreeRTOS：
+
+void App_FreeRTOS_start(void)
 {
     //1.创建电源管理任务
     xTaskCreate(power_task, "power_task", POWER_TASK_STACK_SIZE, NULL, POWER_TASK_PRIORITY, &power_task_handle);
@@ -47,11 +59,17 @@ void App_FreeRTOS_start(void)//启动FreeRTOS
     //2.创建飞行控制任务
     xTaskCreate(flight_task, "flight_task", FLIGHT_CONTROL_TASK_STACK_SIZE, NULL, FLIGHT_CONTROL_TASK_PRIORITY, &flight_control_task_handle);
 
-    //启动调度器
+    //3.创建led灯任务
+    xTaskCreate(led_task, "led_task", LED_TASK_STACK_SIZE, NULL, LED_TASK_PRIORITY, &led_task_handle);
+
+    //4.创建通信任务
+    xTaskCreate(com_task, "com_task", COM_TASK_STACK_SIZE, NULL, COM_TASK_PRIORITY, &com_task_handle);
+
+    //5.启动调度器
     vTaskStartScheduler();
 }
 
-void power_task(void *pvParameters)
+void power_task(void *pvParameters)//电源管理任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
@@ -65,7 +83,7 @@ void power_task(void *pvParameters)
     }
 }
 
-void flight_task(void *pvParameters)
+void flight_task(void *pvParameters)//飞控任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
@@ -80,7 +98,7 @@ void flight_task(void *pvParameters)
     }
 }
 
-void led_task(void *pvParameters)
+void led_task(void *pvParameters)//led灯任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
@@ -140,5 +158,27 @@ void led_task(void *pvParameters)
         vTaskDelayUntil(&LastWakeTime, LED_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
         //在末尾判断计数值是否大于10。如果大于10，则将计数值清零，方便下一次循环判断时间间隔:
         count %= 10;
+    }
+}
+//接收数据缓冲区： 
+uint8_t com_data[TX_PLOAD_WIDTH] = {0};
+
+void com_task(void *pvParameters)//通信任务
+{
+    //获取当前基准时间
+    TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
+    while (1)
+    {
+        //由于SI24R1默认为接收模式，这里只需要处理接收数据
+
+        //接收数据：
+        uint8_t ret = Int_SI24R1_RxPacket(com_data);
+        //判断是否接受成功并打印日志：
+        if(ret == 0)
+        {
+            debug_printf("接收数据成功: %s\r\n", com_data);//打印日志
+        }
+        //6ms执行一次（接收数据时间间隔应该等于发送数据时间间隔）
+        vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
     }
 }

@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -25,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include "Com_debug.h"
 #include "App_FreeRTOS_Task.h"
+#include "int_SI24R1.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -88,13 +90,16 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART1_UART_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  //实现�??初的日志输出打印
+  //实现最初的日志输出打印
   // HAL_UART_Transmit(&huart2, "Hello World!\n", 13, 1000);
   
   //输出带有原码名称和行号的日志信息
-  // debug_printf("Hello %s\n", "World");
+  debug_printf("Hello %s\n", "remote");
+  Int_SI24R1_Init();//SPI硬件初始化
+
   App_FreeRTOS_start();//启动Freertos
 
   /* USER CODE END 2 */
