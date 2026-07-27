@@ -14,16 +14,26 @@ void com_task(void *pvParameters);
 TaskHandle_t com_task_handle;
 #define COM_TASK_PERIOD 6 //任务周期
 
+//按键任务
+void key_task(void *pvParameters);
+#define KEY_TASK_STACK_SIZE  128
+#define KEY_TASK_PRIORITY    2
+TaskHandle_t key_task_handle;
+#define KEY_TASK_PERIOD 20 //任务周期
+
 /*
     启动FreeRTOS：
 */
 void App_FreeRTOS_start(void)
 {
-    //创建电源管理任务
+    //1.创建电源管理任务
     xTaskCreate(power_task, "power_task", POWER_TASK_STACK_SIZE, NULL, POWER_TASK_PRIORITY, &power_task_handle);
 
-    //创建通信任务
+    //2.创建通信任务
     xTaskCreate(com_task, "com_task", COM_TASK_STACK_SIZE, NULL, COM_TASK_PRIORITY, &com_task_handle);
+
+    //3.创建按键任务
+    xTaskCreate(key_task, "key_task", KEY_TASK_STACK_SIZE, NULL, KEY_TASK_PRIORITY, &key_task_handle);
 
     //启动调度器
     vTaskStartScheduler();
@@ -66,5 +76,15 @@ void com_task(void *pvParameters)
         //退出发送模式(恢复到接收模式):
 		Int_SI24R1_RX_Mode();
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//6ms执行一次
+    }
+}
+
+void key_task(void *pvParameters)
+{
+    TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
+    while (1)
+    {
+        App_process_key_data();
+        vTaskDelayUntil(&LastWakeTime, KEY_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
     }
 }
