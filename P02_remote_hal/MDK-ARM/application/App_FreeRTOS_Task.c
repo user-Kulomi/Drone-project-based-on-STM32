@@ -21,6 +21,13 @@ void key_task(void *pvParameters);
 TaskHandle_t key_task_handle;
 #define KEY_TASK_PERIOD 20 //任务周期
 
+//摇杆任务
+void joystick_task(void *pvParameters);
+#define JOYSTICK_TASK_STACK_SIZE  128
+#define JOYSTICK_TASK_PRIORITY    2
+TaskHandle_t joystick_task_handle;
+#define JOYSTICK_TASK_PERIOD 20 //任务周期
+
 /*
     启动FreeRTOS：
 */
@@ -35,11 +42,14 @@ void App_FreeRTOS_start(void)
     //3.创建按键任务
     xTaskCreate(key_task, "key_task", KEY_TASK_STACK_SIZE, NULL, KEY_TASK_PRIORITY, &key_task_handle);
 
+    //4.创建摇杆任务
+    xTaskCreate(joystick_task, "joystick_task", JOYSTICK_TASK_STACK_SIZE, NULL, JOYSTICK_TASK_PRIORITY, &joystick_task_handle);
+
     //启动调度器
     vTaskStartScheduler();
 }
 
-void power_task(void *pvParameters)
+void power_task(void *pvParameters)//电源管理任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
@@ -54,32 +64,17 @@ void power_task(void *pvParameters)
 }
 
 uint8_t com_buf[TX_PLOAD_WIDTH] = {0};
-void com_task(void *pvParameters)
+void com_task(void *pvParameters)//通信任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
     while (1)
     {
-        //调用SI24R1接口进行数据发送：
-        //1.进入发送模式:
-        Int_SI24R1_TX_Mode();
-        //编辑发送内容：
-        com_buf[0] = 'h';
-        com_buf[1] = 'e';
-        com_buf[2] = 'l';
-        com_buf[3] = 'l';
-        com_buf[4] = 'o';
-        com_buf[5] = '!';
-        //发送字节:
-        Int_SI24R1_TxPacket(com_buf);
-
-        //退出发送模式(恢复到接收模式):
-		Int_SI24R1_RX_Mode();
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//6ms执行一次
     }
 }
 
-void key_task(void *pvParameters)
+void key_task(void *pvParameters)//按键任务
 {
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
     while (1)
@@ -88,3 +83,15 @@ void key_task(void *pvParameters)
         vTaskDelayUntil(&LastWakeTime, KEY_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
     }
 }
+
+void joystick_task(void *pvParameters)//摇杆任务
+{
+    TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
+    Int_joystick_init();//初始化摇杆
+    while (1)
+    {
+        App_process_joystick_data();//处理摇杆数据
+        vTaskDelayUntil(&LastWakeTime, JOYSTICK_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
+    }
+}
+

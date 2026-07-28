@@ -18,12 +18,12 @@ void Int_joystick_init(void)
 /**
  * @brief 获取摇杆的ADC数据，保存到结构体地址中 
  * 
- * @param *joystick 
+ * @param joystick 
  */
 void Int_joystick_get(Joystick_struct *joystick)
 {
     //DMA转换不依赖于CPU，而且是循环扫描，因此读取的数据是实时保存到adc_buff中的
-    //原理图中定义了4个ADC通道，分别对应4个ADC通道的ADC值，依次是thr,yaw,pit,rol,因此将缓存区的值读取到结构体中的顺序不能搞错
+    //原理图中定义了4个ADC通道，分别对应2个摇杆共4个ADC通道的ADC值，依次是thr,yaw,pit,rol。因此将缓存区的值读取到结构体中的顺序不能搞错
     joystick-> thr = adc_buff[0];
     joystick-> yaw = adc_buff[1];
     joystick-> pit = adc_buff[2];

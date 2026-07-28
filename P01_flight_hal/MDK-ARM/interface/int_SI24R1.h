@@ -3,6 +3,8 @@
 
 #include "spi.h"
 #include "Com_debug.h"
+#include "freertos.h"
+#include "task.h"
 
 //(1).stm32使用SI24R1需要在cubemx中配置SPI
 #define CS_LOW()        HAL_GPIO_WritePin     (SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET)//拉低片选

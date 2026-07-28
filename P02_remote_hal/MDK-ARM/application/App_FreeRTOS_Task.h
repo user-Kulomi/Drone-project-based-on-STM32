@@ -8,6 +8,7 @@
 #include "int_SI24R1.h"
 #include "App_process_data.h"
 
+
 void App_FreeRTOS_start(void);
 
 #endif // APP_FREERTOS_TASK_H 

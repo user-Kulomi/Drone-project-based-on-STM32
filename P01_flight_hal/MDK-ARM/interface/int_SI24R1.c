@@ -180,6 +180,7 @@ uint8_t Int_SI24R1_TxPacket(uint8_t *txbuf)
 	while (((state & TX_DS) == 0) && ((state & MAX_RT) == 0)) // 轮询状态寄存器，直到TX_DS或MAX_RT中断标志位被置1，证明发送完成或达到最大重发次数
 	{
 		state = Int_SI24R1_Read_Reg(STATUS); // 更新state
+		vTaskDelay(1);//vtask延时1ms，以免函数阻塞导致低优先级任务无法执行
 	}
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, state); // 清除TX_DS或MAX_RT中断标志
 	if (state & MAX_RT)										// 达到最大重发次数
