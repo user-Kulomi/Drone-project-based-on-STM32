@@ -955,6 +955,16 @@
               <FileType>1</FileType>
               <FilePath>.\application\App_FreeRTOS_Task.c</FilePath>
             </File>
+            <File>
+              <FileName>App_receive_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\application\App_receive_data.c</FilePath>
+            </File>
+            <File>
+              <FileName>App_receive_data.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\application\App_receive_data.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

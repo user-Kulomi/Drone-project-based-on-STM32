@@ -36,6 +36,17 @@
 keil-assistant.log
 uv4.log
 
+# Visual Studio Code 配置文件夹（忽略所有层级下的 .vscode 目录）
+.vscode/
+
+# VSCode 工作区文件
+*.code-workspace
+
+# VSCode 历史记录和本地调试配置
+.history/
+*.suo
+*.user
+*.sln.docstates
 # ========================================
 # 4. STM32CubeMX 临时文件
 # ========================================

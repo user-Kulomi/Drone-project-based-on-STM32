@@ -10,6 +10,29 @@ static uint8_t SPI_RW(uint8_t byte)
 	HAL_SPI_TransmitReceive(&hspi1, &byte, &rx_data, 1, 1000);
 	return rx_data;
 }
+/****************************************************
+函数功能：清空RX FIFO队列
+入口参数：无
+返回值：无
+****************************************************/
+void Int_SI24R1_FlushRX(void)
+{
+    CS_LOW();
+    SPI_RW(FLUSH_RX);  // 仅发送单字节指令，不额外写数据
+    CS_HIGH();
+}
+
+/****************************************************
+函数功能：清空TX FIFO队列
+入口参数：无
+返回值：无
+****************************************************/
+void Int_SI24R1_FlushTX(void)
+{
+    CS_LOW();
+    SPI_RW(FLUSH_TX);  // 仅发送单字节指令，不额外写数据
+    CS_HIGH();
+}
 
 /********************************************************
 函数功能：SI24R1引脚初始化
@@ -112,6 +135,12 @@ void Int_SI24R1_RX_Mode(void)
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + RF_SETUP, 0x06);					   // 数据传输率1Mbps，发射功率4dBm
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + CONFIG, 0x0f);						   // CRC使能，16位CRC校验，上电，接收模式
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, 0xff);						   // 清除所有的中断标志位
+
+	//清空FIFO队列，防止接收数据时，FIFO队列中有残留数据导致接收失败：
+	Int_SI24R1_FlushTX();
+    Int_SI24R1_FlushRX();
+    Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + 0x07, 0xFF);
+	
 	CE_HIGH();																	   // 拉高CE启动接收设备
 }
 
@@ -131,6 +160,12 @@ void Int_SI24R1_TX_Mode(void)
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + RF_CH, 40);							   // 选择射频通道0x40
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + RF_SETUP, 0x06);					   // 数据传输率1Mbps，发射功率4dBm
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + CONFIG, 0x0e);						   // CRC使能，16位CRC校验，上电
+
+	//清空FIFO队列，防止接收数据时，FIFO队列中有残留数据导致发送失败：
+	Int_SI24R1_FlushTX();
+    Int_SI24R1_FlushRX();
+    Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + 0x07, 0xFF);
+
 	CE_HIGH();																	   // 拉高CE启动发送设备
 }
 
@@ -149,15 +184,66 @@ uint8_t Int_SI24R1_RxPacket(uint8_t *rxbuf)
 	// 硬件规定：如果之前状态寄存器的值为1，则将状态寄存器的值写入状态寄存器后，会清除RX_DR标志位。
 	// 如果不清零RX_DR，下次调用函数还会误判 “还有数据”，重复读取同一包
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, state); // 清零RX_DR标志位
-	if (state & RX_DR)										// 接收到数据。RX_DR是宏，为0x40。转化为二进制，第6位为1，即01000000。若接收到数据，状态寄存器的第6位会被置1，则state与RX_DR的与运算结果为0x40，不为0，代表接收到数据
+	if (state & RX_DR)	// 接收到数据。RX_DR是宏，为0x40。转化为二进制，第6位为1，即01000000。若接收到数据，状态寄存器的第6位会被置1，则state与RX_DR的与运算结果为0x40，不为0，代表接收到数据
 	{
 		Int_SI24R1_Read_Buf(RD_RX_PLOAD, rxbuf, TX_PLOAD_WIDTH); // 读取数据
-		Int_SI24R1_Write_Reg(FLUSH_RX, 0xff);					 // 清除RX FIFO寄存器（接收到的数据）
+		Int_SI24R1_FlushRX();					 // 清除RX FIFO寄存器（接收到的数据）
 		return 0;
 	}
 	return 1; // 没收到任何数据
 }
 
+//读取指令无法正常读取数据时，可直接使用读取FIFO队列的方式读取数据，规避异常：
+// uint8_t Int_SI24R1_RxPacket(uint8_t *rxbuf)
+// {
+//     uint8_t status;
+//     CS_LOW();
+//     // 发送读RX FIFO命令，同时获取实时STATUS
+//     status = SPI_RW(RD_RX_PLOAD);
+//     // 读取17字节载荷
+//     for(uint8_t i=0; i<TX_PLOAD_WIDTH; i++)
+//     {
+//         rxbuf[i] = SPI_RW(0);
+//     }
+//     CS_HIGH();
+        
+//     if (status & RX_DR)
+//     {
+//         Int_SI24R1_FlushRX();
+//         // 清除RX_DR标志
+//         Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, RX_DR);
+//         return 0;
+//     }
+//     return 1;
+// }
+
+//更稳定的写法，避免时序错乱或宏定义冲突导致读取失败：
+// uint8_t Int_SI24R1_RxPacket(uint8_t *rxbuf)
+// {
+//     // 1. 先读状态寄存器，确认有新数据包（直接用地址0x07，规避宏冲突）
+//     uint8_t state = Int_SI24R1_Read_Reg(0x07);
+    
+//     // 没有新数据，直接返回，绝不操作FIFO
+//     if (!(state & 0x40)) // 0x40 = RX_DR标志位
+//     {
+//         return 1;
+//     }
+
+//     // 2. 确认有数据，再读取载荷
+//     CS_LOW();
+//     SPI_RW(RD_RX_PLOAD); // 发送读载荷命令
+//     for(uint8_t i = 0; i < TX_PLOAD_WIDTH; i++)
+//     {
+//         rxbuf[i] = SPI_RW(0);
+//     }
+//     CS_HIGH();
+
+//     // 3. 仅清除RX_DR中断标志（写1清零）
+//     Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + 0x07, 0x40);
+
+//     // 注意：正常接收绝不调用FlushRX！硬件自动移除已读数据包
+//     return 0;
+// }
 /********************************************************
 函数功能：发送一个数据包
 入口参数：txbuf:要发送的数据
@@ -185,7 +271,7 @@ uint8_t Int_SI24R1_TxPacket(uint8_t *txbuf)
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, state); // 清除TX_DS或MAX_RT中断标志
 	if (state & MAX_RT)										// 达到最大重发次数
 	{
-		Int_SI24R1_Write_Reg(FLUSH_TX, 0xff); // 手动清除TX FIFO寄存器，因为达到最大重发次数不会自动清除TX FIFO寄存器
+		Int_SI24R1_FlushTX(); // 手动清除TX FIFO寄存器，因为达到最大重发次数不会自动清除TX FIFO寄存器
 		return 1;//达到最大重发次数，发送失败，返回1
 	}
 	if (state & TX_DS) // 发送完成
@@ -225,9 +311,11 @@ uint8_t Iny_SI24R1_Check(void)//检验是否初始化完成
 	}
 	return 0; //初始化成功
 }
-void Int_SI24R1_Init(void) //硬件接口层SI24R1的初始化函数
+
+//硬件接口层SI24R1的初始化函数:
+void Int_SI24R1_Init(void) 
 {
-	HAL_Delay(200);//芯片上电延时，应大于100ms
+	HAL_Delay(500);//芯片上电延时，应大于100ms
 	while(Iny_SI24R1_Check() == 1)//检验是否初始化完成
 	{
 		HAL_Delay(10);//每两次检测间隔10ms

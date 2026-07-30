@@ -3,6 +3,8 @@
 //说明：状态寄存器一共有8位，不同位的值（0,1）表示不同含义，具体含义参考SI24R1数据手册。将二进制的状态寄存器
 //转换出来的十进制值，就是状态寄存器的值。
 
+
+
 // 定义一个静态发送地址（发送地址与接收地址相同，第一位地址0x0A不要乱改）
 uint8_t TX_ADDRESS[TX_ADR_WIDTH] = {0x0A, 0x01, 0x07, 0x0E, 0x01};
 
@@ -14,6 +16,29 @@ static uint8_t SPI_RW(uint8_t byte)
 	HAL_SPI_TransmitReceive(&hspi1, &byte, &rx_data, 1, 1000);//参数1：SPI句柄，参数2：要发送的数据首地址
 	                                                          //参数3：接收数据首地址，参数4：数据长度，参数5：超时时间
 	return rx_data;
+}
+/****************************************************
+函数功能：清空RX FIFO队列
+入口参数：无
+返回值：无
+****************************************************/
+void Int_SI24R1_FlushRX(void)
+{
+    CS_LOW();
+    SPI_RW(FLUSH_RX);  // 仅发送单字节指令，不额外写数据
+    CS_HIGH();
+}
+
+/****************************************************
+函数功能：清空TX FIFO队列
+入口参数：无
+返回值：无
+****************************************************/
+void Int_SI24R1_FlushTX(void)
+{
+    CS_LOW();
+    SPI_RW(FLUSH_TX);  // 仅发送单字节指令，不额外写数据
+    CS_HIGH();
 }
 
 /********************************************************
@@ -134,7 +159,7 @@ void Int_SI24R1_TX_Mode(void)
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + EN_AA, 0x01);						   // 使能接收通道0自动应答
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + EN_RXADDR, 0x01);					   // 使能接收通道0
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + SETUP_RETR, 0x0a);					   // 自动重发延时等待250us+86us，自动重发10次
-	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + RF_CH, 40);							   // 选择射频通道0x40
+	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + RF_CH, 40);							   // 选择射频通道40
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + RF_SETUP, 0x06);					   // 数据传输率1Mbps，发射功率4dBm
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + CONFIG, 0x0e);						   // CRC使能，16位CRC校验，上电
 	CE_HIGH();																	   // 拉高CE启动发送设备
@@ -159,7 +184,7 @@ uint8_t Int_SI24R1_RxPacket(uint8_t *rxbuf)
 	                  // RX_DR转化为二进制，第6位为1，即01000000。若接收到数据，状态寄存器的第6位会被置1，则state与RX_DR的与运算结果为0x40，不为0，代表接收到数据
 	{
 		Int_SI24R1_Read_Buf(RD_RX_PLOAD, rxbuf, TX_PLOAD_WIDTH); // 读取数据
-		Int_SI24R1_Write_Reg(FLUSH_RX, 0xff);					 // 清除RX FIFO寄存器（接收到的数据）
+		Int_SI24R1_FlushRX();
 		return 0;
 	}
 	return 1; // 没收到任何数据
@@ -174,7 +199,7 @@ uint8_t Int_SI24R1_TxPacket(uint8_t *txbuf)
 {
 	uint8_t state;
 	CE_LOW();												  // CE拉低，使能SI24R1配置（进入到配置模式，方便下面往发送队列即 TX FIFO 中写数据）
-	Int_SI24R1_Write_Buf(WR_TX_PLOAD, txbuf, TX_PLOAD_WIDTH); // 写数据到TX FIFO,32个字节（WR_TX_PLOAD代表往发送队列中写数据的命令）
+	Int_SI24R1_Write_Buf(WR_TX_PLOAD, txbuf, TX_PLOAD_WIDTH); // 写数据到TX FIFO,17个字节（WR_TX_PLOAD代表往发送队列中写数据的命令）
 	CE_HIGH();												  // CE置高，使能发送
 	//此后，SI24R1会自动发送数据，并根据配置的重发次数和重发延时时间来重发数据，后续只需等待与判断发送是否成功：
 
@@ -193,7 +218,7 @@ uint8_t Int_SI24R1_TxPacket(uint8_t *txbuf)
 	Int_SI24R1_Write_Reg(SI24R1_WRITE_REG + STATUS, state); // 通过将状态寄存器的值写入状态寄存器，清除TX_DS或MAX_RT中断标志（原理同上个函数清除接收数据标志位）
 	if (state & MAX_RT)										// 达到最大重发次数
 	{
-		Int_SI24R1_Write_Reg(FLUSH_TX, 0xff); // 手动清除TX FIFO寄存器，因为达到最大重发次数不会自动清除TX FIFO寄存器。清除TX FIFO寄存器是为了清除残余数据，为下一次发送做准备
+		Int_SI24R1_FlushTX(); // 手动清除TX FIFO寄存器，因为达到最大重发次数不会自动清除TX FIFO寄存器。清除TX FIFO寄存器是为了清除残余数据，为下一次发送做准备
 		return 1;//达到最大重发次数，发送失败，返回1
 	}
 	if (state & TX_DS) // 发送完成
@@ -235,7 +260,7 @@ uint8_t Iny_SI24R1_Check(void)
 }
 void Int_SI24R1_Init(void) //硬件接口层SI24R1的初始化函数
 {
-	HAL_Delay(200);//芯片上电延时，应大于100ms
+	HAL_Delay(500);//芯片上电延时，应大于100ms
 	while(Iny_SI24R1_Check() == 1)//检验是否初始化完成
 	{
 		HAL_Delay(10);//每两次检测间隔10ms

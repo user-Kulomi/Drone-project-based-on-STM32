@@ -6,6 +6,8 @@
 #include "freertos.h"
 #include "task.h"
 
+void Int_SI24R1_FlushRX(void);
+void Int_SI24R1_FlushTX(void);
 //(1).stm32使用SI24R1需要在cubemx中配置SPI
 #define CS_LOW()        HAL_GPIO_WritePin     (SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET)//拉低片选
 #define CS_HIGH()       HAL_GPIO_WritePin     (SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_SET)  //拉高片选
@@ -15,7 +17,7 @@
 //(2).SI24R1的地址宽度和有效数据宽度
 
 #define TX_ADR_WIDTH    5  				    // 5位地址长度
-#define TX_PLOAD_WIDTH  32  				// 32位有效数据长度
+#define TX_PLOAD_WIDTH  17  				// 17位有效数据长度
 
 //********************************************************************************************************************//
 // SPI(SI24R1) commands

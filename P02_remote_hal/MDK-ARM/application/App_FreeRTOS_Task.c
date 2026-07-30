@@ -70,6 +70,7 @@ void com_task(void *pvParameters)//通信任务
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
     while (1)
     {
+        App_transmit_Data();
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//6ms执行一次
     }
 }

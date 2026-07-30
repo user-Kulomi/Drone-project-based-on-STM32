@@ -45,7 +45,7 @@ TaskHandle_t led_task_handle;
 //通信任务
 void com_task(void *pvParameters);
 #define COM_TASK_STACK_SIZE  128
-#define COM_TASK_PRIORITY    3
+#define COM_TASK_PRIORITY    2
 TaskHandle_t com_task_handle;
 #define COM_TASK_PERIOD 6 //任务周期
 
@@ -92,7 +92,7 @@ void flight_task(void *pvParameters)//飞控任务
 
 
         //直接启动电机
-        Int_motor_start(&left_top_motor);//启动左上角电机
+        // Int_motor_start(&left_top_motor);//启动左上角电机
         vTaskDelayUntil(&LastWakeTime, FLIGHT_TASK_PERIOD);//任务周期
 
     }
@@ -160,24 +160,45 @@ void led_task(void *pvParameters)//led灯任务
         count %= 10;
     }
 }
-//接收数据缓冲区： 
-uint8_t com_data[TX_PLOAD_WIDTH] = {0};
 
+uint8_t rx_buf[TX_PLOAD_WIDTH + 1] = {0}; //接收数据缓冲区
 void com_task(void *pvParameters)//通信任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
     while (1)
     {
-        //由于SI24R1默认为接收模式，这里只需要处理接收数据
-
         //接收数据：
-        uint8_t ret = Int_SI24R1_RxPacket(com_data);
-        //判断是否接受成功并打印日志：
-        if(ret == 0)
-        {
-            debug_printf("接收数据成功: %s\r\n", com_data);//打印日志
-        }
+        App_receive_data(); 
+
+        //异常时的调试代码：
+        // static uint32_t tick = 0;
+        // static uint32_t call_cnt = 0, ok_cnt = 0, fail_cnt = 0;
+
+        // call_cnt++;
+        // uint8_t res = App_receive_data();
+        // if(res == 0) ok_cnt++;
+        // else fail_cnt++;
+
+        // if(HAL_GetTick() - tick > 1000)
+        // {
+        //     tick = HAL_GetTick();
+        //     debug_printf("in 1s: call=%d, success=%d, fail=%d\r\n", call_cnt, ok_cnt, fail_cnt);
+        //     call_cnt = 0;
+        //     ok_cnt = 0;
+        //     fail_cnt = 0;
+        // }
+
+        // uint8_t r = Int_SI24R1_RxPacket(rx_buf);
+        // if(r == 0)
+        // {
+        //     debug_printf("%s\n", rx_buf);
+        // }
+        // else if(r == 1)
+        // {
+        //     debug_printf("Failed to receive data");
+        // }
+        
         //6ms执行一次（接收数据时间间隔应该等于发送数据时间间隔）
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
     }

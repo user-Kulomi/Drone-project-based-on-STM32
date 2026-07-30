@@ -9,5 +9,6 @@
 #include "int_led.h"
 #include "Com_config.h"
 #include "int_SI24R1.h"
+#include "App_receive_data.h"
 
 #endif // APP_FREERTOS_TASK_H 

@@ -160,8 +160,14 @@ void App_process_joystick_data(void)
     joystick.pit = Com_limit(joystick.pit, 0, 1000);
     joystick.rol = Com_limit(joystick.rol, 0, 1000);
 
+    //6.将处理后的摇杆数据更新到遥控器数据结构体中：
+    remote_Data.thr = joystick.thr;
+	remote_Data.yaw = joystick.yaw;
+	remote_Data.pit = joystick.pit;
+	remote_Data.rol = joystick.rol;
+    
     //退出临界区：
     taskEXIT_CRITICAL();
     
-    debug_printf(":%d, %d, %d, %d\r\n", joystick.thr, joystick.yaw, joystick.pit, joystick.rol);
+    // debug_printf(":%d, %d, %d, %d\r\n", joystick.thr, joystick.yaw, joystick.pit, joystick.rol);
 }
