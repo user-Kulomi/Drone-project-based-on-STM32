@@ -14,7 +14,7 @@ Led_Struct right_bottom_led = {.GPIOx = LED3_GPIO_Port, .GPIO_Pin = LED3_Pin};
 Led_Struct left_bottom_led = {.GPIOx = LED4_GPIO_Port, .GPIO_Pin = LED4_Pin};
 
 //表示遥控器连接状态：
-Remote_State remote_state = REMOTE_CONNECT;
+Remote_State remote_state = REMOTE_DISCONNECT;
 
 //表示当前飞行状态：
 Flight_State flight_state = IDLE;
@@ -169,36 +169,11 @@ void com_task(void *pvParameters)//通信任务
     while (1)
     {
         //接收数据：
-        App_receive_data(); 
-
-        //异常时的调试代码：
-        // static uint32_t tick = 0;
-        // static uint32_t call_cnt = 0, ok_cnt = 0, fail_cnt = 0;
-
-        // call_cnt++;
-        // uint8_t res = App_receive_data();
-        // if(res == 0) ok_cnt++;
-        // else fail_cnt++;
-
-        // if(HAL_GetTick() - tick > 1000)
-        // {
-        //     tick = HAL_GetTick();
-        //     debug_printf("in 1s: call=%d, success=%d, fail=%d\r\n", call_cnt, ok_cnt, fail_cnt);
-        //     call_cnt = 0;
-        //     ok_cnt = 0;
-        //     fail_cnt = 0;
-        // }
-
-        // uint8_t r = Int_SI24R1_RxPacket(rx_buf);
-        // if(r == 0)
-        // {
-        //     debug_printf("%s\n", rx_buf);
-        // }
-        // else if(r == 1)
-        // {
-        //     debug_printf("Failed to receive data");
-        // }
+        uint8_t res = App_receive_data(); 
         
+        //根据接收结果处理连接状态：
+        // process_connect_state(res);
+
         //6ms执行一次（接收数据时间间隔应该等于发送数据时间间隔）
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
     }
