@@ -3,6 +3,10 @@
 Remote_Data remote_data = {0}; //定义遥控器数据结构体变量
 
 uint8_t rx_buff[TX_PLOAD_WIDTH] = {0}; //接收数据缓冲区
+
+extern Remote_State remote_state;
+uint8_t Try_count = 0; //尝试连接次数
+
 /** 
 * @brief 接收遥控器发送的数据
 *
@@ -66,4 +70,20 @@ uint8_t App_receive_data(void)
     return 0; //数据接收并校验成功
 }
 
-
+void process_connect_state(uint8_t res)
+{
+    if(res == 0)
+    {
+        remote_state = REMOTE_CONNECT; //连接成功
+        Try_count = 0; //连接成功，重置尝试连接次数
+    }
+    else
+    {
+        Try_count++; //增加尝试连接次数
+        if(Try_count >= MAX_RETRY_CONNECT_COUNT)
+        {
+            remote_state = REMOTE_DISCONNECT; //连接失败
+            Try_count = 0; //重置尝试连接次数
+        }
+    }
+}

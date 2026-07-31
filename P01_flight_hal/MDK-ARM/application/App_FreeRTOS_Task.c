@@ -172,7 +172,7 @@ void com_task(void *pvParameters)//通信任务
         uint8_t res = App_receive_data(); 
         
         //根据接收结果处理连接状态：
-        // process_connect_state(res);
+        process_connect_state(res);
 
         //6ms执行一次（接收数据时间间隔应该等于发送数据时间间隔）
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高

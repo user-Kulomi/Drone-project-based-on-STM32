@@ -9,11 +9,21 @@
 #define FRAME_HEAD_CHECK_VALUE_2 'l'
 #define FRAME_HEAD_CHECK_VALUE_3 'm'
 
+//定义最大重试连接次数：
+#define MAX_RETRY_CONNECT_COUNT  10
+
 /** 
 * @brief 接收遥控器发送的数据
 *
 * @return uint8_t: 处理结果。0表示校验通过，数据正确。1表示校验失败或者未接收到数据
 */
 uint8_t App_receive_data(void);
+
+/**
+* @brief 处理与遥控器的连接状态
+* @param res: 处理结果。0表示连接成功，1表示连接失败
+*/
+void process_connect_state(uint8_t res);
+
 
 #endif // APP_RECEIVE_DATA_H
