@@ -10,4 +10,11 @@
  * 
  */
 void Int_IP5305T_start(void);
+
+/**
+ * @brief 关闭IP5305T电源，关机
+ * 
+ */
+void Int_IP5305T_shutdown(void);
+
 #endif // INT_IP5305T_H

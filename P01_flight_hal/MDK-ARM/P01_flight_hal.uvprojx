@@ -971,11 +971,6 @@
           <GroupName>interface</GroupName>
           <Files>
             <File>
-              <FileName>int_IP5305T.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\P02_remote_hal\MDK-ARM\interface\int_IP5305T.c</FilePath>
-            </File>
-            <File>
               <FileName>int_motor.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\interface\int_motor.c</FilePath>
@@ -994,6 +989,11 @@
               <FileName>int_SI24R1.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\interface\int_SI24R1.h</FilePath>
+            </File>
+            <File>
+              <FileName>int_IP5305T.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\interface\int_IP5305T.c</FilePath>
             </File>
           </Files>
         </Group>

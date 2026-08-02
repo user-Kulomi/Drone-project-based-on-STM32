@@ -19,6 +19,9 @@ Remote_State remote_state = REMOTE_DISCONNECT;
 //表示当前飞行状态：
 Flight_State flight_state = IDLE;
 
+//表示接受到的遥控器数据：
+Remote_Data remote_data = {0};
+
 //定义各个任务：
 
 //电源管理任务
@@ -75,11 +78,24 @@ void power_task(void *pvParameters)//电源管理任务
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
     while (1)
     {
-        //由于电源管理芯片会在一段时间后休眠，所以需要每10s启动一次电源，避免电源关闭
-        vTaskDelayUntil(&LastWakeTime, POWER_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
-        //启动电源：
-        Int_IP5305T_start();
+        // //由于电源管理芯片会在一段时间后休眠，所以需要每10s启动一次电源，避免电源关闭
+        // vTaskDelayUntil(&LastWakeTime, POWER_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高
+        // //启动电源：
+        // Int_IP5305T_start();
 
+        //使用任务通知的方式实现电源管理：
+        //等待通知：
+        uint32_t res = ulTaskNotifyTake(pdTRUE, POWER_TASK_PERIOD);//等待10s，如果收到通知则关闭电源
+        if(res == 1)
+        {
+            //收到关机通知，关闭电源
+            Int_IP5305T_shutdown();
+        }
+        else
+        {
+            //未收到通知，默认执行开机指令：
+            Int_IP5305T_start();
+        }
     }
 }
 
@@ -173,6 +189,17 @@ void com_task(void *pvParameters)//通信任务
         
         //根据接收结果处理连接状态：
         process_connect_state(res);
+
+        //处理关机命令：
+        if(remote_data.shutdown == 1)
+        {
+            //关机命令，关闭电源。
+            //Int_IP5305T_shutdown();
+            
+            //虽然以上代码可以完成功能，但是在通信任务中调用电源管理函数，结构不优雅。更推荐使用任务通知的方式实现关机指令:
+            xTaskNotifyGive(power_task_handle);
+            
+        }
 
         //6ms执行一次（接收数据时间间隔应该等于发送数据时间间隔）
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高

@@ -1,6 +1,6 @@
 #include "App_receive_data.h"
 
-Remote_Data remote_data = {0}; //定义遥控器数据结构体变量
+extern Remote_Data remote_data ; //定义遥控器数据结构体变量
 
 uint8_t rx_buff[TX_PLOAD_WIDTH] = {0}; //接收数据缓冲区
 
