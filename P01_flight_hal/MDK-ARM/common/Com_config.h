@@ -39,4 +39,38 @@ typedef struct
     uint8_t fix_height; //定高（默认为0，为0代表不改变状态，为1代表切换定高状态）
 } Remote_Data;          
 
+//陀螺仪数据结构体
+
+//角速度数据结构体：
+typedef struct
+{
+    int16_t gyro_x;//向右飞的转动方向为正，表示翻滚角
+    int16_t gyro_y;//向前飞的转动方向为正，表示俯仰角
+    int16_t gyro_z;//逆时针旋转为正，表示偏航角
+} Gyro_struct;
+
+//加速度数据结构体：
+typedef struct
+{
+    int16_t accel_x;//向前(机头方向)为正
+    int16_t accel_y;//向左为正
+    int16_t accel_z;//向上为正
+} Acc_struct;
+
+//存储两个结构体的数据：
+typedef struct
+{
+    Gyro_struct gyro_data;
+    Acc_struct acc_data;
+} Gyro_Accel_struct;
+
+//解算得到的欧拉角：
+typedef struct
+{
+    float yaw;
+    float pitch;
+    float roll;
+} Euler_struct;
+
+
 #endif // __COM_CONFIG_H

@@ -71,7 +71,7 @@ uint8_t App_receive_data(void)
     remote_data.shutdown = rx_buff[11];
     remote_data.fix_height = rx_buff[12];
 
-    debug_printf(":%d,%d,%d,%d,%d,%d\n",remote_data.thr, remote_data.yaw, remote_data.pit, remote_data.rol, remote_data.shutdown, remote_data.fix_height);
+    // debug_printf(":%d,%d,%d,%d,%d,%d\n",remote_data.thr, remote_data.yaw, remote_data.pit, remote_data.rol, remote_data.shutdown, remote_data.fix_height);
     return 0; //数据接收并校验成功
 }
 
@@ -116,6 +116,7 @@ static uint8_t App_process_unlock(void)
                 start_time = xTaskGetTickCount(); //记录开始时间
                 //xTaskGetTickCount():FreeRTOS获取当前系统时间，单位为ms
                 thr_state = MAX; //油门拉到最大值
+                debug_printf("油门拉到最大值\n");
             }
             break;
         }
@@ -126,10 +127,12 @@ static uint8_t App_process_unlock(void)
                 if(xTaskGetTickCount() - start_time >= 1000)//用户取消油门最大值时刻与之前油门达到最大值的一刻间隔时间超过1s
                 {
                     thr_state = LEAVE_MAX; //达到离开最大值状态，与后续油门拉到最小值的状态机逻辑配合实现油门解锁逻辑
+                    debug_printf("达到离开最大值状态\n");
                 }
                 else//用户取消油门最大值时刻与之前油门达到最大值的一刻间隔时间小于1s
                 {
                     thr_state = FREE; //油门回归空闲状态
+                    debug_printf("油门回归空闲状态\n");
                 }
             }
             break;
@@ -140,6 +143,7 @@ static uint8_t App_process_unlock(void)
             {
                 start_time = xTaskGetTickCount(); //记录开始时间
                 thr_state = MIN; //油门切换到最小值状态
+                debug_printf("油门切换到最小值状态\n");
             }
             break;
         }
@@ -150,6 +154,7 @@ static uint8_t App_process_unlock(void)
                 if(xTaskGetTickCount() - start_time < 1000)//用户取消油门最小值时刻与之前油门达到最小值的一刻间隔时间小于1s
                 {
                     thr_state = FREE; //油门回归空闲状态
+                    debug_printf("油门回归空闲状态\n");
                 }
             }
             else//用户仍保持油门最小值状态
@@ -157,6 +162,7 @@ static uint8_t App_process_unlock(void)
                 if(xTaskGetTickCount() - start_time >= 1000)//用户保持油门最小值状态超过1s，满足解锁条件
                 {
                     thr_state = UNLOCK; //油门解锁成功
+                    debug_printf("油门解锁成功\n");
                 }
             }
             break;

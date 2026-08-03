@@ -103,12 +103,11 @@ void flight_task(void *pvParameters)//飞控任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
+    Int_MPU6050_Init();//初始化MPU6050
     while (1)
     {
-
-
-        //直接启动电机
-        // Int_motor_start(&left_top_motor);//启动左上角电机
+        //获取飞行角度数据
+        App_flight_get_euler_angle();
         vTaskDelayUntil(&LastWakeTime, FLIGHT_TASK_PERIOD);//任务周期
 
     }

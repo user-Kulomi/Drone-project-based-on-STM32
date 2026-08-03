@@ -28,6 +28,90 @@ void Int_MPU6050_Read_Reg(uint8_t reg, uint8_t *data)
     HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR_READ, reg, I2C_MEMADD_SIZE_8BIT, data, 1, 1000);
 }
 
+int16_t Acc_x_offset = 0;
+int16_t Acc_y_offset = 0;
+int16_t Acc_z_offset = 0;
+
+int16_t Gyro_x_offset = 0;
+int16_t Gyro_y_offset = 0;
+int16_t Gyro_z_offset = 0;
+
+/**
+ * @brief 在完成MPU6050初始化的末尾进行零偏校准
+ */
+void Int_MPU6050_calculate_offset(void)
+{
+    //1.等待飞机放置平稳
+
+    //判断依据：加速度三个轴的数据跳动范围持续小于200，达到100次，即代表放置平稳
+    Acc_struct last_data = {0};
+    Acc_struct current_data = {0};
+    uint8_t count = 0;
+
+    //获取加速度到last_data:
+    Int_MPU6050_Get_Acc(&last_data);
+
+    //轮询数值波动小于200的次数，直到大于100次:
+    while(count < 100)
+    {
+        Int_MPU6050_Get_Acc(&current_data);
+        if(abs(current_data.accel_x - last_data.accel_x) < STABLE_COND_FLUCTUATION_ALLOW_VAL_ACC &&
+           abs(current_data.accel_y - last_data.accel_y) < STABLE_COND_FLUCTUATION_ALLOW_VAL_ACC && 
+           abs(current_data.accel_z - last_data.accel_z) < STABLE_COND_FLUCTUATION_ALLOW_VAL_ACC )
+        {
+            count++;
+        }
+        else
+        {
+            count = 0;
+        }
+        last_data = current_data;
+        vTaskDelay(6);//延时6ms，避免任务阻塞
+    }
+
+    //2.计算零偏值，便于后续调用：
+
+    //六个轴的累计偏差值：
+    int32_t Acc_x_offset_sum = 0;
+    int32_t Acc_y_offset_sum = 0;
+    int32_t Acc_z_offset_sum = 0;
+
+    int32_t Gyro_x_offset_sum = 0;
+    int32_t Gyro_y_offset_sum = 0;
+    int32_t Gyro_z_offset_sum = 0;
+
+    //存储六轴数据:
+    Acc_struct acc_data = {0};
+    Gyro_struct gyro_data = {0};
+
+    for (uint8_t i = 0; i < 100; i++)//测量100次取平均值
+    {
+        //实时获取六轴数据：
+        Int_MPU6050_Get_Acc(&acc_data);
+        Int_MPU6050_Get_Gyro(&gyro_data);
+
+        Acc_x_offset_sum += (acc_data.accel_x - 0);
+        Acc_y_offset_sum += (acc_data.accel_y - 0);
+        //Z轴加速度初值应为0.98g。按±2g量程换算，对应的16位数据为 32768 * 0.98 / 2 = 16056
+        Acc_z_offset_sum += (acc_data.accel_z - 16056);
+        
+        Gyro_x_offset_sum += (gyro_data.gyro_x - 0);
+        Gyro_y_offset_sum += (gyro_data.gyro_y - 0);
+        Gyro_z_offset_sum += (gyro_data.gyro_z - 0);
+
+        vTaskDelay(6);//延时6ms
+    }
+    //最终的偏差值：
+    Acc_x_offset = Acc_x_offset_sum / 100;
+    Acc_y_offset = Acc_y_offset_sum / 100;
+    Acc_z_offset = Acc_z_offset_sum / 100;
+
+    Gyro_x_offset = Gyro_x_offset_sum / 100;
+    Gyro_y_offset = Gyro_y_offset_sum / 100;
+    Gyro_z_offset = Gyro_z_offset_sum / 100;
+}
+
+
 /**
  * @brief 初始化MPU6050
  * 
@@ -45,7 +129,6 @@ void Int_MPU6050_Init(void)
 
     //通过判断电源管理寄存器1的值是否为0x40来确认芯片是否已经重启完成（重启完成，0x6B值会变为0x40，芯片睡眠）:
     uint8_t reg_value = 0;
-
     while (reg_value != 0x40)
     {
         Int_MPU6050_Read_Reg(MPU_PWR_MGMT1_REG, &reg_value);
@@ -86,4 +169,74 @@ void Int_MPU6050_Init(void)
 
     //8.使能加速度计和陀螺仪：
     Int_MPU6050_Write_Reg(MPU_PWR_MGMT2_REG, 0x00);
+
+    //9.计算并更新零偏值：
+    Int_MPU6050_calculate_offset();
 }
+
+/**
+ * @brief 读取三轴角速度（存在轻微抖动，需要进行零偏校准）
+ * 
+ * @param gyro_data 存放角速度数据的结构体指针
+ */
+void Int_MPU6050_Get_Gyro(Gyro_struct *gyro_data)
+{
+    uint8_t high_byte = 0;
+    uint8_t low_byte = 0;// 用于存放读取到的高8位和低8位数据
+
+    //读取X轴角速度
+    Int_MPU6050_Read_Reg(MPU_GYRO_XOUTH_REG, &high_byte);
+    Int_MPU6050_Read_Reg(MPU_GYRO_XOUTL_REG, &low_byte);
+    gyro_data -> gyro_x = (high_byte << 8 | low_byte) - Gyro_x_offset;// 将原始数据拼接，并减去零偏值
+    
+    // 读取Y轴角速度
+    Int_MPU6050_Read_Reg(MPU_GYRO_YOUTH_REG, &high_byte);
+    Int_MPU6050_Read_Reg(MPU_GYRO_YOUTL_REG, &low_byte);
+    gyro_data -> gyro_y = (high_byte << 8 | low_byte) - Gyro_y_offset;
+    
+    // 读取Z轴角速度
+    Int_MPU6050_Read_Reg(MPU_GYRO_ZOUTH_REG, &high_byte);
+    Int_MPU6050_Read_Reg(MPU_GYRO_ZOUTL_REG, &low_byte);
+    gyro_data -> gyro_z = (high_byte << 8 | low_byte) - Gyro_z_offset;
+
+}
+
+/**
+ * @brief 读取三轴加速度（抖动很严重，需要进行校准。Z轴值不为0）
+ * 
+ * @param acc_data 存放加速度数据的结构体指针
+ */
+void Int_MPU6050_Get_Acc(Acc_struct *acc_data)
+{
+    uint8_t high_byte = 0;
+    uint8_t low_byte = 0;// 用于存放读取到的高8位和低8位数据
+    
+    //读取X轴加速度
+    Int_MPU6050_Read_Reg(MPU_ACCEL_XOUTH_REG, &high_byte);
+    Int_MPU6050_Read_Reg(MPU_ACCEL_XOUTL_REG, &low_byte);
+    acc_data -> accel_x = (high_byte << 8 | low_byte) - Acc_x_offset; // 将原始数据拼接，并减去零偏值
+    
+    // 读取Y轴加速度
+    Int_MPU6050_Read_Reg(MPU_ACCEL_YOUTH_REG, &high_byte);
+    Int_MPU6050_Read_Reg(MPU_ACCEL_YOUTL_REG, &low_byte);
+    acc_data -> accel_y = (high_byte << 8 | low_byte) - Acc_y_offset;
+    
+    // 读取Z轴加速度
+    Int_MPU6050_Read_Reg(MPU_ACCEL_ZOUTH_REG, &high_byte);
+    Int_MPU6050_Read_Reg(MPU_ACCEL_ZOUTL_REG, &low_byte);
+    acc_data -> accel_z = (high_byte << 8 | low_byte) - Acc_z_offset;
+}
+
+/**
+ * @brief 读取所有的六轴数据
+ * 
+ * @param gyro_acc_data 共同存放角速度和加速度数据的结构体指针
+ */
+void Int_MPU6050_Get_Data(Gyro_Accel_struct *gyro_acc_data)
+{
+    Int_MPU6050_Get_Gyro(&gyro_acc_data -> gyro_data);
+    Int_MPU6050_Get_Acc(&gyro_acc_data -> acc_data);
+}
+
+
+

@@ -10,5 +10,7 @@
 #include "Com_config.h"
 #include "int_SI24R1.h"
 #include "App_receive_data.h"
+#include "App_flight.h"
+
 
 #endif // APP_FREERTOS_TASK_H 

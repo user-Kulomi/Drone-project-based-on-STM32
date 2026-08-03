@@ -3,6 +3,10 @@
 
 #include "i2c.h"
 #include "Com_config.h"
+#include "com_debug.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "stdlib.h"
 
 #define MPU6050_ADDR 0x68
 #define MPU6050_ADDR_WRITE (MPU6050_ADDR << 1)
@@ -74,6 +78,7 @@
 #define MPU_FIFO_RW_REG 0X74    // FIFO读写寄存器
 #define MPU_DEVICE_ID_REG 0X75   // 器件ID寄存器
 
+#define STABLE_COND_FLUCTUATION_ALLOW_VAL_ACC 400 //平稳时加速度三轴数据允许的波动值
 /**
  * @brief 向MPU6050指定寄存器写入数据
  * 
@@ -95,6 +100,27 @@ void Int_MPU6050_Read_Reg(uint8_t reg, uint8_t *data);
  * 
  */
 void Int_MPU6050_Init(void);
+
+/**
+ * @brief 读取三轴角速度
+ * 
+ * @param gyro_data 存放角速度数据的结构体指针
+ */
+void Int_MPU6050_Get_Gyro(Gyro_struct *gyro_data);
+
+/**
+ * @brief 读取三轴加速度
+ * 
+ * @param acc_data 存放加速度数据的结构体指针
+ */
+void Int_MPU6050_Get_Acc(Acc_struct *acc_data);
+
+/**
+ * @brief 读取所有的六轴数据
+ * 
+ * @param gyro_acc_data 共同存放角速度和加速度数据的结构体指针
+ */
+void Int_MPU6050_Get_Data(Gyro_Accel_struct *gyro_acc_data);
 
 #endif // INT_MPU6050_H
 
