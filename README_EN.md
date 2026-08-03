@@ -25,7 +25,6 @@ Drone-project-based-on-STM32
 │   │   ├── CMSIS                      # ARM CMSIS standard core library
 │   │   └── STM32F1xx_HAL_Driver       # STM32F1 HAL hardware abstraction layer driver
 │   ├── MDK-ARM                        # Keil5 dedicated project directory
-│   │   ├── .vscode                    # VS Code editor configuration
 │   │   ├── application                # Application‑layer business code, FreeRTOS task logic
 │   │   ├── common                     # Common modules: debug printing, global configuration
 │   │   ├── DebugConfig                # Keil debugger configuration files
@@ -48,7 +47,6 @@ Drone-project-based-on-STM32
 │   │   ├── CMSIS                      # ARM CMSIS standard core library
 │   │   └── STM32F1xx_HAL_Driver       # STM32F1 HAL hardware abstraction layer driver
 │   ├── MDK-ARM                        # Keil5 dedicated project directory
-│   │   ├── .vscode                    # VS Code editor configuration
 │   │   ├── application                # Application‑layer business code, FreeRTOS task logic
 │   │   ├── common                     # Common modules: debug printing
 │   │   ├── DebugConfig                # Keil debugger configuration files

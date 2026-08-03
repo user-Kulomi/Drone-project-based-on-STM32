@@ -25,7 +25,6 @@ Drone-project-based-on-STM32
 │   │   ├── CMSIS                      # ARM CMSIS 标准内核库
 │   │   └── STM32F1xx_HAL_Driver       # STM32F1 HAL 硬件抽象层驱动
 │   ├── MDK-ARM                        # Keil5 专用工程目录
-│   │   ├── .vscode                    # VS Code 编辑器配置目录
 │   │   ├── application                # 应用层业务代码，FreeRTOS 任务逻辑
 │   │   ├── common                     # 公共通用模块，调试打印、全局配置
 │   │   ├── DebugConfig                # Keil 调试器配置文件
@@ -48,7 +47,6 @@ Drone-project-based-on-STM32
 │   │   ├── CMSIS                      # ARM CMSIS 标准内核库
 │   │   └── STM32F1xx_HAL_Driver       # STM32F1 HAL 硬件抽象层驱动
 │   ├── MDK-ARM                        # Keil5 专用工程目录
-│   │   ├── .vscode                    # VS Code 编辑器配置目录
 │   │   ├── application                # 应用层业务代码，FreeRTOS 任务逻辑
 │   │   ├── common                     # 公共通用模块，调试打印
 │   │   ├── DebugConfig                # Keil 调试器配置文件
