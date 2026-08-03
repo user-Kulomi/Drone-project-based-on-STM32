@@ -159,7 +159,7 @@ void led_task(void *pvParameters)//led灯任务
                 int_led_toggle(&right_bottom_led);
             }
         }
-        else if(flight_state == FIX_HIGH)
+        else if(flight_state == FIX_HEIGHT)
         {
             //定高状态，后两个灯常开
             int_led_turn_on(&left_bottom_led);
@@ -184,13 +184,13 @@ void com_task(void *pvParameters)//通信任务
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
     while (1)
     {
-        //接收数据：
+        //1.接收数据：
         uint8_t res = App_receive_data(); 
         
-        //根据接收结果处理连接状态：
+        //2.根据接收结果处理连接状态：
         process_connect_state(res);
 
-        //处理关机命令：
+        //3.处理关机命令：
         if(remote_data.shutdown == 1)
         {
             //关机命令，关闭电源。
@@ -198,8 +198,10 @@ void com_task(void *pvParameters)//通信任务
             
             //虽然以上代码可以完成功能，但是在通信任务中调用电源管理函数，结构不优雅。更推荐使用任务通知的方式实现关机指令:
             xTaskNotifyGive(power_task_handle);
-            
         }
+
+        //4.处理飞行状态：
+        process_flight_state();
 
         //6ms执行一次（接收数据时间间隔应该等于发送数据时间间隔）
         vTaskDelayUntil(&LastWakeTime, COM_TASK_PERIOD);//使用vtaskdelayuntil函数实现延时，精度更高

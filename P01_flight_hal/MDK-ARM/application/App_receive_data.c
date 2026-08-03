@@ -4,7 +4,12 @@ extern Remote_Data remote_data ; //定义遥控器数据结构体变量
 
 uint8_t rx_buff[TX_PLOAD_WIDTH] = {0}; //接收数据缓冲区
 
-extern Remote_State remote_state;
+extern Remote_State remote_state;//遥控器连接状态
+
+extern Flight_State flight_state;//飞行状态
+
+Thr_State thr_state = FREE;//油门状态，默认空闲状态
+
 uint8_t Try_count = 0; //尝试连接次数
 
 /** 
@@ -70,6 +75,10 @@ uint8_t App_receive_data(void)
     return 0; //数据接收并校验成功
 }
 
+/**
+* @brief 处理遥控器的连接状态
+* @param res: 接收数据结果。0表示接收成功，1表示接收失败
+*/
 void process_connect_state(uint8_t res)
 {
     if(res == 0)
@@ -87,3 +96,140 @@ void process_connect_state(uint8_t res)
         }
     }
 }
+uint32_t start_time = 0;
+/**
+* @brief 解锁条件
+* @return uint8_t: 解锁结果。0表示解锁成功，1表示解锁失败
+*/
+static uint8_t App_process_unlock(void)
+{
+    //状态机逻辑实现
+    //解锁条件：油门拉最高1s，再拉最低1s，即可解锁。这样能确保解锁后油门处于最小值，保证安全
+    switch(thr_state)
+    {
+        case FREE:
+        {
+            if(remote_data.thr >= 900)
+            {
+                start_time = xTaskGetTickCount(); //记录开始时间
+                //xTaskGetTickCount():FreeRTOS获取当前系统时间，单位为ms
+                thr_state = MAX; //油门拉到最大值
+            }
+            break;
+        }
+        case MAX:
+        {
+            if(remote_data.thr < 900)//用户取消油门最大值
+            {
+                if(xTaskGetTickCount() - start_time >= 1000)//用户取消油门最大值时刻与之前油门达到最大值的一刻间隔时间超过1s
+                {
+                    thr_state = LEAVE_MAX; //达到离开最大值状态，与后续油门拉到最小值的状态机逻辑配合实现油门解锁逻辑
+                }
+                else//用户取消油门最大值时刻与之前油门达到最大值的一刻间隔时间小于1s
+                {
+                    thr_state = FREE; //油门回归空闲状态
+                }
+            }
+            break;
+        }
+        case LEAVE_MAX:
+        {
+            if(remote_data.thr <= 100)//达到离开最大值状态且油门拉到最小值，切换为最小值状态
+            {
+                start_time = xTaskGetTickCount(); //记录开始时间
+                thr_state = MIN; //油门切换到最小值状态
+            }
+            break;
+        }
+        case MIN:
+        {
+            if(remote_data.thr > 100)//用户取消油门最小值
+            {
+                if(xTaskGetTickCount() - start_time < 1000)//用户取消油门最小值时刻与之前油门达到最小值的一刻间隔时间小于1s
+                {
+                    thr_state = FREE; //油门回归空闲状态
+                }
+            }
+            else//用户仍保持油门最小值状态
+            {
+                if(xTaskGetTickCount() - start_time >= 1000)//用户保持油门最小值状态超过1s，满足解锁条件
+                {
+                    thr_state = UNLOCK; //油门解锁成功
+                }
+            }
+            break;
+        } 
+        case UNLOCK:
+        {
+            return 0; //解锁成功
+        }
+        default:
+            break;
+    }
+    if(thr_state == UNLOCK)
+    {
+        return 0; //解锁成功
+    }
+    return 1; // 解锁失败
+}
+
+/**
+* @brief 处理飞行状态
+*/
+void process_flight_state(void)
+{
+    //使用状态机逻辑实现
+
+    //轮询调用判断当前飞行状态：
+    switch(flight_state)
+    {
+        case IDLE:
+        {
+            if(App_process_unlock() == 0)
+            {
+                flight_state = NORMAL; //解锁成功，进入正常飞行状态
+                thr_state = FREE; //解锁成功后，油门状态回归空闲状态，便于下次判断解锁
+            }
+
+            break;
+        }
+        case NORMAL:
+        {
+            if(remote_data.fix_height == 1)
+            {
+                flight_state = FIX_HEIGHT; //收到切换定高状态指令，进入定高状态
+                remote_data.fix_height = 0; //清除切换定高状态指令，避免重复进入定高分支导致运行异常
+            }
+            else if(remote_state == REMOTE_DISCONNECT)
+            {
+                flight_state = FAIL; //遥控器断开连接，进入故障状态
+            }
+
+            break;
+        }
+        case FIX_HEIGHT:
+        {
+            if(remote_data.fix_height == 1)
+            {
+                flight_state = NORMAL; //收到取消定高指令，返回正常飞行状态
+                remote_data.fix_height = 0; //清除切换定高状态指令，避免重复进入定高分支导致运行异常
+            }
+            else if(remote_state == REMOTE_DISCONNECT)
+            {
+                flight_state = FAIL; //遥控器断开连接，进入故障状态
+            }
+
+            break;
+        }
+        case FAIL:
+        {
+            //缓慢关闭电机，直接降落并返回空闲状态 
+            vTaskDelay(1); //延时1ms，模拟电机关闭
+            flight_state = IDLE; //返回空闲状态，等待下一次解锁
+            break;
+        }
+        default:
+            break; 
+    }
+}
+

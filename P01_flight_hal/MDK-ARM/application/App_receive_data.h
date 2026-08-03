@@ -25,5 +25,9 @@ uint8_t App_receive_data(void);
 */
 void process_connect_state(uint8_t res);
 
+/**
+* @brief 处理飞行状态
+*/
+void process_flight_state(void);
 
 #endif // APP_RECEIVE_DATA_H
