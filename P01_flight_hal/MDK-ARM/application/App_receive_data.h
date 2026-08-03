@@ -30,4 +30,5 @@ void process_connect_state(uint8_t res);
 */
 void process_flight_state(void);
 
+
 #endif // APP_RECEIVE_DATA_H
