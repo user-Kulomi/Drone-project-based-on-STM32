@@ -97,13 +97,14 @@ void process_connect_state(uint8_t res)
     }
 }
 
+uint32_t start_time = 0;
+
 /**
 * @brief 解锁条件
 * @return uint8_t: 解锁结果。0表示解锁成功，1表示解锁失败
 */
 static uint8_t App_process_unlock(void)
 {
-    uint32_t start_time = 0;
     //状态机逻辑实现
     //解锁条件：油门拉最高1s，再拉最低1s，即可解锁。这样能确保解锁后油门处于最小值，保证安全
     switch(thr_state)
