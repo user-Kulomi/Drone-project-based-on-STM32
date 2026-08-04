@@ -3,6 +3,7 @@
 
 #include "int_mpu6050.h"
 #include "com_debug.h"
+#include "com_filter.h"
 
 /**
  * @brief 获取欧拉角
