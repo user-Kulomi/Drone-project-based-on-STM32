@@ -10,7 +10,7 @@
 #define FRAME_HEAD_CHECK_VALUE_3 'm'
 
 //定义最大重试连接次数：
-#define MAX_RETRY_CONNECT_COUNT  10
+#define MAX_RETRY_CONNECT_COUNT  20
 
 /** 
 * @brief 接收遥控器发送的数据

@@ -43,7 +43,7 @@ uint8_t App_receive_data(void)
     //1.帧头校验：
     if(rx_buff[0] != FRAME_HEAD_CHECK_VALUE_1 || rx_buff[1] != FRAME_HEAD_CHECK_VALUE_2 || rx_buff[2] != FRAME_HEAD_CHECK_VALUE_3)
     {
-        debug_printf(":帧头校验失败");
+        // debug_printf(":帧头校验失败");
         return 1; //帧头校验失败
     }
 
@@ -59,7 +59,7 @@ uint8_t App_receive_data(void)
     sum_check = rx_buff[13] << 24 | rx_buff[14] << 16 | rx_buff[15] << 8 | rx_buff[16];
     if(sum != sum_check)
     {
-        debug_printf(":帧尾校验失败");
+        // debug_printf(":帧尾校验失败");
         return 1; //帧尾校验失败
     }
 
@@ -91,6 +91,7 @@ void process_connect_state(uint8_t res)
         Try_count++; //增加尝试连接次数
         if(Try_count >= MAX_RETRY_CONNECT_COUNT)
         {
+            debug_printf("DISCON!");
             remote_state = REMOTE_DISCONNECT; //连接失败
             Try_count = 0; //重置尝试连接次数
         }
@@ -116,7 +117,7 @@ static uint8_t App_process_unlock(void)
                 start_time = xTaskGetTickCount(); //记录开始时间
                 //xTaskGetTickCount():FreeRTOS获取当前系统时间，单位为ms
                 thr_state = MAX; //油门拉到最大值
-                debug_printf("油门拉到最大值\n");
+                // debug_printf("油门拉到最大值\n");
             }
             break;
         }
@@ -127,12 +128,12 @@ static uint8_t App_process_unlock(void)
                 if(xTaskGetTickCount() - start_time >= 1000)//用户取消油门最大值时刻与之前油门达到最大值的一刻间隔时间超过1s
                 {
                     thr_state = LEAVE_MAX; //达到离开最大值状态，与后续油门拉到最小值的状态机逻辑配合实现油门解锁逻辑
-                    debug_printf("达到离开最大值状态\n");
+                    // debug_printf("达到离开最大值状态\n");
                 }
                 else//用户取消油门最大值时刻与之前油门达到最大值的一刻间隔时间小于1s
                 {
                     thr_state = FREE; //油门回归空闲状态
-                    debug_printf("油门回归空闲状态\n");
+                    // debug_printf("油门回归空闲状态\n");
                 }
             }
             break;
@@ -143,7 +144,7 @@ static uint8_t App_process_unlock(void)
             {
                 start_time = xTaskGetTickCount(); //记录开始时间
                 thr_state = MIN; //油门切换到最小值状态
-                debug_printf("油门切换到最小值状态\n");
+                // debug_printf("油门切换到最小值状态\n");
             }
             break;
         }
@@ -154,7 +155,7 @@ static uint8_t App_process_unlock(void)
                 if(xTaskGetTickCount() - start_time < 1000)//用户取消油门最小值时刻与之前油门达到最小值的一刻间隔时间小于1s
                 {
                     thr_state = FREE; //油门回归空闲状态
-                    debug_printf("油门回归空闲状态\n");
+                    // debug_printf("油门回归空闲状态\n");
                 }
             }
             else//用户仍保持油门最小值状态
@@ -162,7 +163,7 @@ static uint8_t App_process_unlock(void)
                 if(xTaskGetTickCount() - start_time >= 1000)//用户保持油门最小值状态超过1s，满足解锁条件
                 {
                     thr_state = UNLOCK; //油门解锁成功
-                    debug_printf("油门解锁成功\n");
+                    // debug_printf("油门解锁成功\n");
                 }
             }
             break;
@@ -186,6 +187,7 @@ static uint8_t App_process_unlock(void)
 */
 void process_flight_state(void)
 {
+    static uint16_t disconnect_timer = 0;//失联计时数
     //使用状态机逻辑实现
 
     //轮询调用判断当前飞行状态：
@@ -198,7 +200,6 @@ void process_flight_state(void)
                 flight_state = NORMAL; //解锁成功，进入正常飞行状态
                 thr_state = FREE; //解锁成功后，油门状态回归空闲状态，便于下次判断解锁
             }
-
             break;
         }
         case NORMAL:
@@ -207,10 +208,20 @@ void process_flight_state(void)
             {
                 flight_state = FIX_HEIGHT; //收到切换定高状态指令，进入定高状态
                 remote_data.fix_height = 0; //清除切换定高状态指令，避免重复进入定高分支导致运行异常
+                disconnect_timer = 0;//清零失联计时数
             }
-            else if(remote_state == REMOTE_DISCONNECT)
+            else if(remote_state == REMOTE_DISCONNECT)//中途断开连接
             {
-                flight_state = FAIL; //遥控器断开连接，进入故障状态
+                disconnect_timer += 6;//每次判断连接状态时，若是失联状态，就让计时数+6（一个本任务周期：6ms）
+                if(disconnect_timer >= 500 && remote_state == REMOTE_DISCONNECT)//失联持续500ms以上，判定为彻底断开连接
+                {
+                    flight_state = FAIL; //遥控器断开连接，进入故障状态
+                    disconnect_timer = 0;//清零失联计时数
+                }
+            }
+            else if(remote_state == REMOTE_CONNECT)//中途恢复连接
+            {
+                disconnect_timer = 0;//清零失联计时数
             }
 
             break;

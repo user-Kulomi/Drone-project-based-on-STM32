@@ -905,6 +905,26 @@
               <FileType>5</FileType>
               <FilePath>.\common\Com_filter.h</FilePath>
             </File>
+            <File>
+              <FileName>Com_IMU.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\common\Com_IMU.c</FilePath>
+            </File>
+            <File>
+              <FileName>Com_IMU.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\common\Com_IMU.h</FilePath>
+            </File>
+            <File>
+              <FileName>Com_pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\common\Com_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>Com_pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\common\Com_pid.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

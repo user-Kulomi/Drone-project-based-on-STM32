@@ -1,12 +1,6 @@
 #include "App_FreeRTOS_Task.h"
 #include "int_led.h"
 //由于在c语言中，结构体通常保存在堆中，不会自动进行垃圾回收，故可以始终循环使用同一个结构体来节省内存
-//用同一个结构体对四个方位的电机进行初始化：
-Motor_Struct left_top_motor = {.tim = &htim3, .channel = TIM_CHANNEL_1 ,.speed = 200};
-Motor_Struct left_bottom_motor = {.tim = &htim4, .channel = TIM_CHANNEL_4 ,.speed = 200};
-Motor_Struct right_top_motor = {.tim = &htim2, .channel = TIM_CHANNEL_2 ,.speed = 200};
-Motor_Struct right_bottom_motor = {.tim = &htim1, .channel = TIM_CHANNEL_3,.speed = 200};
-
 //led结构体：
 Led_Struct left_top_led = {.GPIOx = LED1_GPIO_Port, .GPIO_Pin = LED1_Pin};
 Led_Struct right_top_led = {.GPIOx = LED2_GPIO_Port, .GPIO_Pin = LED2_Pin};
@@ -20,7 +14,7 @@ Remote_State remote_state = REMOTE_DISCONNECT;
 Flight_State flight_state = IDLE;
 
 //表示接受到的遥控器数据：
-Remote_Data remote_data = {0};
+Remote_Data remote_data = {.thr = 0, .yaw = 500, .pit = 500, .rol = 500, .fix_height = 0, .shutdown = 0};//将俯仰角，横滚角与偏航角初始化为500，其余均为0
 
 //定义各个任务：
 
@@ -103,13 +97,19 @@ void flight_task(void *pvParameters)//飞控任务
 {
     //获取当前基准时间
     TickType_t LastWakeTime = xTaskGetTickCount();//获取当前基准时间,作为下面vTaskDelayUntil函数的参数
-    Int_MPU6050_Init();//初始化MPU6050
+    App_flight_init();//飞控任务初始化
     while (1)
     {
-        //获取飞行角度数据
+        //1.获取飞行角度数据：
         App_flight_get_euler_angle();
-        vTaskDelayUntil(&LastWakeTime, FLIGHT_TASK_PERIOD);//任务周期
 
+        //2.根据当前飞行欧拉角进行PID计算控制：
+        App_flight_pid_process();
+
+        //3.根据PID计算结果对电机进行控制：
+        App_flight_control_motor();
+
+        vTaskDelayUntil(&LastWakeTime, FLIGHT_TASK_PERIOD);//任务周期
     }
 }
 
@@ -134,6 +134,7 @@ void led_task(void *pvParameters)//led灯任务
         else
         {
             //遥控器断开连接，关闭前两个灯
+            debug_printf("FAIL TO CON\n");
             int_led_turn_off(&left_top_led);
             int_led_turn_off(&right_top_led);
         }

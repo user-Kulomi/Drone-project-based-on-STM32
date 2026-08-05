@@ -11,6 +11,6 @@
 #include "int_SI24R1.h"
 #include "App_receive_data.h"
 #include "App_flight.h"
-
+#include "Com_pid.h"
 
 #endif // APP_FREERTOS_TASK_H 
